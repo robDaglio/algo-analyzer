@@ -5,12 +5,13 @@ import logging
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger()
-results = []
+results = {}
 
 
 class AlgoTimer:
     def __init__(
         self,
+        algos: dict = None,
         iterations: int = 3,
         tests: int = 10,
         num_inputs: int = 1000000,
@@ -20,10 +21,7 @@ class AlgoTimer:
 
         self.iterations, self.tests, self.num_inputs = iterations, tests, num_inputs
         self.inputs = []
-
-        self.algos = {
-            'generate_random_nums': self.generate_random_numbers
-        }
+        self.algos = algos
 
         self.generate_random_numbers(input_lower_bound, input_upper_bound)
 
@@ -43,13 +41,24 @@ class AlgoTimer:
         def timer_wrapper(*args, **kwargs):
             start = time.perf_counter()
             r_value = method(*args, **kwargs)
-            results.append(f'Function: {__name__} | Time lapsed: {time.perf_counter() - start}')
+
+            name = kwargs.get('name')
+            run = None
+
+            if name not in results.keys():
+                run = 0
+            else:
+                run += 1
+
+            # results.append(f'Function: {__name__} | Time lapsed: {time.perf_counter() - start}')
+            results[f'{name}_{run}'] = f'Algorithm: {name} | Time lapsed: {time.perf_counter() - start}'
 
             return r_value
         return timer_wrapper
 
     @timer
     def generate_random_numbers(self, lower_bound: int, upper_bound: int):
+        log.info(f'Generating {self.num_inputs} random numbers between {lower_bound} and {upper_bound}.')
         self.inputs = [random.randint(lower_bound, upper_bound) for _ in range(self.num_inputs)]
 
     def run_algo(self, algo_name: str):
@@ -58,7 +67,8 @@ class AlgoTimer:
 
 
 if __name__ == '__main__':
-    with AlgoTimer(3, tests=10, num_inputs=1000000) as s:
-        s.run_algo('generate_random_nums')
+    with AlgoTimer() as s:
+        pass
 
-
+    for k, v in results.items():
+        print(f'{k}: {v}')
