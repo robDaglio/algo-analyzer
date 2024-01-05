@@ -3,12 +3,25 @@ import time
 import random
 import logging
 
-logging.basicConfig(level=logging.INFO)
-log = logging.getLogger()
+
+try:
+    from main import log
+except ImportError as e:
+    log = logging.getLogger()
+    log.error(f'Error importing log from main:\n{e}', exc_info=True)
+
 results = {}
 
 
-class AlgoTimer:
+def example_gen(num_inputs, name=None):
+    lower_bound = 1
+    upper_bound = 999
+
+    log.info(f'Generating {num_inputs} random numbers between {lower_bound} and {upper_bound}.')
+    inputs = [random.randint(lower_bound, upper_bound) for _ in range(num_inputs)]
+
+
+class AlgoAnalyzer:
     def __init__(
         self,
         algos: dict = None,
@@ -42,7 +55,7 @@ class AlgoTimer:
             start = time.perf_counter()
             r_value = method(*args, **kwargs)
 
-            name = kwargs.get('name')
+            name = kwargs.get('algo_name')
             run = None
 
             if name not in results.keys():
@@ -61,14 +74,21 @@ class AlgoTimer:
         log.info(f'Generating {self.num_inputs} random numbers between {lower_bound} and {upper_bound}.')
         self.inputs = [random.randint(lower_bound, upper_bound) for _ in range(self.num_inputs)]
 
-    def run_algo(self, algo_name: str):
-        for _ in range(self.iterations):
-            self.algos[algo_name](self.inputs)
+    @timer
+    def run_algo(self, algo_name: str = None):
+        for i in range(self.iterations):
+            log.info(f'Running {algo_name} | Iteration: {i}')
+            self.algos[algo_name](self.inputs, name=algo_name)
 
 
 if __name__ == '__main__':
-    with AlgoTimer() as s:
-        pass
+    logging.basicConfig(level=logging.INFO)
+    log = logging.getLogger()
+
+    algorithms = {'example_gen': example_gen}
+
+    with AlgoAnalyzer(algos=algorithms) as analyzer:
+        analyzer.run_algo(algo_name='example_gen')
 
     for k, v in results.items():
         print(f'{k}: {v}')
