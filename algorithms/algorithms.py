@@ -1,6 +1,4 @@
-
-
-def bubble_sort(array: list, name: str = 'bubble_sort') -> None:
+def bubble_sort(array: list, name: str = 'bubble_sort') -> list:
     num_inputs = len(array)
 
     for i in range(num_inputs):
@@ -23,6 +21,8 @@ def bubble_sort(array: list, name: str = 'bubble_sort') -> None:
         # the array is already sorted, and you can terminate
         if already_sorted:
             break
+
+    return array
 
 
 compiled_algorithms = {

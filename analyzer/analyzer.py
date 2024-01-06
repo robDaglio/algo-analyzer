@@ -1,94 +1,73 @@
-import functools
-import time
-import random
 import logging
+import random
+import time
 
-
-try:
-    from main import log
-except ImportError as e:
-    log = logging.getLogger()
-    log.error(f'Error importing log from main:\n{e}', exc_info=True)
-
-results = {}
-
-
-def example_gen(num_inputs, name=None):
-    lower_bound = 1
-    upper_bound = 999
-
-    log.info(f'Generating {num_inputs} random numbers between {lower_bound} and {upper_bound}.')
-    inputs = [random.randint(lower_bound, upper_bound) for _ in range(num_inputs)]
+from main import log
 
 
 class AlgoAnalyzer:
     def __init__(
         self,
-        algos: dict = None,
-        iterations: int = 3,
-        tests: int = 10,
-        num_inputs: int = 1000000,
+        algorithms: dict = None,
+        tests: int = 3,
+        iterations: int = 10,
+        num_inputs: int = 10,
         input_lower_bound: int = 1,
-        input_upper_bound: int = 999
+        input_upper_bound: int = 99
     ):
+        self.algorithms = algorithms
+        self.tests, self.iterations = tests, iterations
 
-        self.iterations, self.tests, self.num_inputs = iterations, tests, num_inputs
-        self.inputs = []
-        self.algos = algos
+        self.num_inputs = num_inputs
+        self.input_lower_bound, self.input_upper_bound = input_lower_bound, input_upper_bound
 
-        self.generate_random_numbers(input_lower_bound, input_upper_bound)
+        self.analysis_results = {}
+
+    def __str__(self):
+        return vars(self)
 
     def __enter__(self):
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type, exc_value, exc_traceback):
         pass
 
-    # Operational methods
-    @staticmethod
-    def timer(method):
-        """
-        This decorator calculates elapsed time for a given algorithm.
-        """
-        @functools.wraps(method)
-        def timer_wrapper(*args, **kwargs):
-            start = time.perf_counter()
-            r_value = method(*args, **kwargs)
+    def generate_inputs(self):
+        log.info(f'Creating inputs for {self.tests} tests.')
+        inputs = []
 
-            name = kwargs.get('algo_name')
-            run = None
+        for _ in range(self.tests):
+            log.info(f'Generating a new array of {self.num_inputs} random numbers between '
+                     f'{self.input_lower_bound} and {self.input_upper_bound}.')
 
-            if name not in results.keys():
-                run = 0
-            else:
-                run += 1
+            new_array = [random.randint(self.input_lower_bound, self.input_upper_bound)
+                         for _ in range(self.num_inputs)]
 
-            # results.append(f'Function: {__name__} | Time lapsed: {time.perf_counter() - start}')
-            results[f'{name}_{run}'] = f'Algorithm: {name} | Time lapsed: {time.perf_counter() - start}'
+            inputs.append(new_array)
 
-            return r_value
-        return timer_wrapper
+        return inputs
 
-    @timer
-    def generate_random_numbers(self, lower_bound: int, upper_bound: int):
-        log.info(f'Generating {self.num_inputs} random numbers between {lower_bound} and {upper_bound}.')
-        self.inputs = [random.randint(lower_bound, upper_bound) for _ in range(self.num_inputs)]
-
-    @timer
-    def run_algo(self, algo_name: str = None):
+    def run_analysis(self, algo_name: str = None):
         for i in range(self.iterations):
-            log.info(f'Running {algo_name} | Iteration: {i}')
-            self.algos[algo_name](self.inputs, name=algo_name)
+            log.info(f'Initiating {algo_name} | Iteration {i + 1}')
+            iteration_result = []
 
+            inputs = self.generate_inputs()
 
-if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
-    log = logging.getLogger()
+            for j in range(len(inputs)):
+                start = time.perf_counter()
+                sorted_array = self.algorithms[algo_name](inputs[j], name=algo_name)
+                elapsed = time.perf_counter() - start
 
-    algorithms = {'example_gen': example_gen}
+                if sorted_array == sorted(inputs[j]):
+                    iteration_result.append(elapsed)
 
-    with AlgoAnalyzer(algos=algorithms) as analyzer:
-        analyzer.run_algo(algo_name='example_gen')
+            log.info(f'Iteration {i} complete. Lowest time: {min(iteration_result)}')
+            self.analysis_results[f'{algo_name}_{i + 1}'] = min(iteration_result)
+            self.interpret_results()
 
-    for k, v in results.items():
-        print(f'{k}: {v}')
+    def interpret_results(self):
+        for iteration, result in self.analysis_results.items():
+            log.info(f'Iteration: {iteration} | Result: {result}')
+
+        log.info(f'Lowest: {min(list(self.analysis_results.values()))}')

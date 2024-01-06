@@ -115,6 +115,3 @@ class CLU(logging.Logger):
 
         for handler in self.log.handlers:
             handler.addFilter(SystemLogFilter())
-
-
-
