@@ -1,5 +1,4 @@
 import json
-import logging
 
 from config import parser
 from clu.clu import CLU
